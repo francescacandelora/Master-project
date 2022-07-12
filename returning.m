@@ -1,5 +1,4 @@
-%% Returning file with a unique plot for population (with S1 and S2)
-
+%% Returning but with u neural field instead of travelling wave.
 close all, clear all, clc;
 
 angles = linspace(0.1,2*pi,10);
@@ -28,29 +27,44 @@ S1 = @(t) sin(t)+0.5*sin(0.2*(t));
 alpha = 20; %10
 beta = 0.01; %1/30
 md = 0.1;
-M = 10;
-param = [alpha,beta,md,M];
+m = 10;
+param = [alpha,beta,md,m];
+
+a = 2;
+c = 0.5;
 
 mu = 10;
 h =1;
 
 f = @(z) 1./(1+exp(-mu.*(z-h)));
 
-dAdt = @(t,A) cpu4(t,A,n,S1,f,param);
+w = @(z) a*exp(-abs(z))-c;
+w_ex = @(z) w(z+2*pi).*(heaviside(-z-pi))+w(z).*(heaviside(z+pi)-heaviside(z-pi))+w(z-2*pi).*heaviside(z-pi);
+M = zeros(n,n);
+for j = 1:n
+    for k = 1:n
+        M(j,k) = w_ex(theta(j)-theta(k))*deltatheta;
+    end
+end
+
+dAdt = @(t,A) cpu4u(t,A,n,S1,f,M,param);
 
 th0 = [0*theta];
+u0  = 0.5*(cos(theta)+1).^3;
 zL0 = [0*theta];
 zR0 = [0*theta];
 
-A0 = [th0;zL0;zR0];
+A0 = [th0;u0;zL0;zR0];
 
 [tsol1,Asol] = ode45(dAdt,trange,A0);
 
 ith = 1:n;
-izL = n+1:2*n;
-izR = 2*n+1:3*n;
+iu  = n+1:2*n;
+izL = 2*n+1:3*n;
+izR = 3*n+1:4*n;
 
 thsol1 = Asol(:,ith);
+usol1  = Asol(:,iu);
 zLsol1 = Asol(:,izL);
 zRsol1 = Asol(:,izR);
 
@@ -59,11 +73,10 @@ thsol1 = [thsol1,thsol1(:,1)];
 
 [TH,T] = meshgrid(theta,tsol1); 
 
+usol1 = [usol1,usol1(:,1)];
 % CPU1 population
-usurf1 = ((cos(theta-thsol1')+1).^5)';
-% usurf = ((cos(theta-S(0.1*T').*T')+1).^5)';
-vL1 = zRsol1-circshift(usurf1(:,1:end-1),1,2);
-vR1 = zLsol1-circshift(usurf1(:,1:end-1),-1,2);
+vL1 = zRsol1-circshift(usol1(:,1:end-1),1,2);
+vR1 = zLsol1-circshift(usol1(:,1:end-1),-1,2);
 
 %% Integral
 % We now want to compute S(t) as a result of the steering.
@@ -82,36 +95,39 @@ trange2 = [trange(end):0.02:20];
 % trange2 = [trange(end):0.02:10];
 
 th0 = thsol1(end,1:end-1);
+u0  = usol1(end,1:end-1);
 zL0 = zLsol1(end,:);
 zR0 = zRsol1(end,:);
 
-A0 = [th0';zL0';zR0'];
+A0 = [th0';u0';zL0';zR0'];
 
-dAdt = @(t,A) cpu4return(t,A,n,vel,f,param);
+dAdt = @(t,A) cpu4returnu(t,A,n,vel,f,M,param);
     
 [tsol2,Asol] = ode45(dAdt,trange2,A0);
 
-    ith = 1:n;
-    izL = n+1:2*n;
-    izR = 2*n+1:3*n;
+ith = 1:n;
+iu  = n+1:2*n;
+izL = 2*n+1:3*n;
+izR = 3*n+1:4*n;
 
-    thsol2 = Asol(:,ith);
-    zLsol2 = Asol(:,izL);
-    zRsol2 = Asol(:,izR);
+thsol2 = Asol(:,ith);
+usol2  = Asol(:,iu);
+zLsol2 = Asol(:,izL);
+zRsol2 = Asol(:,izR);
     
-    thsol2 = [thsol2,thsol2(:,1)];
+thsol2 = [thsol2,thsol2(:,1)];
     %%
 
-    [TH,T] = meshgrid(theta,tsol2);
+[TH,T] = meshgrid(theta,tsol2);
 
-    % CPU1 population
-    usurf2 = ((cos(theta-thsol2')+1).^5)';
-    % usurf = ((cos(theta-S(0.1*T').*T')+1).^5)';
-    vL2 = zRsol2-circshift(usurf2(:,1:end-1),1,2);
-    vR2 = zLsol2-circshift(usurf2(:,1:end-1),-1,2);
+usol2 = [usol2,usol2(:,1)];
+% CPU1 population
+vL2 = zRsol2-circshift(usol2(:,1:end-1),1,2);
+vR2 = zLsol2-circshift(usol2(:,1:end-1),-1,2);
+
 %% Make final plots
 tsol = [tsol1;tsol2];
-usurf = [usurf1;usurf2];
+usol = [usol1;usol2];
 zRsol = [zRsol1;zRsol2];
 zLsol = [zLsol1;zLsol2];
 zLsol = [zLsol,zLsol(:,1)];
@@ -124,14 +140,14 @@ vL = [vL1;vL2];
 figure();
 
 % surf(T,TH,usurf);
-pcolor(T,TH,usurf);
+pcolor(T,TH,usol);
 shading flat;
 colormap(flipud(bone))
 axis tight;
 xlabel('t');ylabel('\theta');zlabel('u');
 title('Plot of u(\theta,t)')
 pbaspect([2 1 1])
-pva = angle(usurf(:,1:9)*exp(i*theta(1:9)));
+pva = angle(usol(:,1:9)*exp(i*theta(1:9)));
 hold on;
 plot(linspace(T(1),T(end),length(pva)),pva,'.','Linewidth',2,'Color','#D95319'); 
 %%
@@ -183,87 +199,3 @@ stvec = sum(vR,2)-sum(vL,2);
 figure();plot(tsol,stvec,'LineWidth',1.5)
 figure();
 plot(tsol,tanh(stvec/100),'LineWidth',1.5)
-
-%% Bar charts t=0 
-
-% zR
-figure()
-subplot(2,2,1)
-bar(1:8,zRsol1(1,:),'FaceColor','#D95319')
-ylim([-40 120])
-title('zR(\theta,t=0)')
-
-% ZL
-
-subplot(2,2,2)
-bar(9:16,zLsol1(1,:),'FaceColor','#EDB120')
-ylim([-40 120])
-title('zL(\theta,t=0)')
-
-% vL
-subplot(2,2,3)
-bar(8:15,vL1(1,:))
-ylim([-40 120])
-title('vL(\theta,t=0)')
-
-% vR
-subplot(2,2,4)
-bar(2:9,vR1(1,:),'FaceColor',	'#4DBEEE')
-ylim([-40 120])
-title('vR(\theta,t=0)')
-
-%% Bar charts when sitmulus removed
-
-% zR
-figure()
-subplot(2,2,1)
-bar(1:8,zRsol1(end,:),'FaceColor','#D95319')
-ylim([-40 120])
-title('zR(\theta,t=7)')
-
-% ZL
-
-subplot(2,2,2)
-bar(9:16,zLsol1(end,:),'FaceColor','#EDB120')
-ylim([-40 120])
-title('zL(\theta,t=7)')
-
-% vL
-subplot(2,2,3)
-bar(8:15,vL1(end,:))
-ylim([-40 120])
-title('vL(\theta,t=7)')
-
-% vR
-subplot(2,2,4)
-bar(2:9,vR1(end,:),'FaceColor',	'#4DBEEE')
-ylim([-40 120])
-title('vR(\theta,t=7)')
-
-%% Bar charts whent=t(end)
-t=20;
-% zR
-figure()
-subplot(2,2,1)
-bar(1:8,zRsol2(end,:),'FaceColor','#D95319')
-ylim([-40 120])
-title('zR(\theta,t=20)')
-
-% ZL
-
-subplot(2,2,2)
-bar(9:16,zLsol2(end,:),'FaceColor','#EDB120')
-ylim([-40 120])
-title('zL(\theta,t=20)')
-
-% vL
-subplot(2,2,3)
-bar(8:15,vL2(end,:))
-ylim([-40 120])
-title('vL(\theta,t=20)')
-
-% vR
-subplot(2,2,4)
-bar(2:9,vR2(end,:),'FaceColor',	'#4DBEEE')
-ylim([-40 120])
-title('vR(\theta,t=20)')

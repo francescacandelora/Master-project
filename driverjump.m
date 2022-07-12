@@ -60,8 +60,9 @@ fig = figure;
 % surf(T,X,usol);
 
 pcolor(T,X,usol)
+pbaspect([2 1 1])
 
-xlabel('t');ylabel('x');zlabel('u');
+xlabel('t');ylabel('\theta');zlabel('u');
 shading flat;
 colormap(flipud(bone))
 %colormap(brewermap(9,'Blues'))
@@ -71,9 +72,15 @@ hold on;
 
 
 pva = angle(usol(:,1:16)*exp(i*x(1:16,:)));
-
 plot(linspace(T(1),T(end),length(pva)),pva,'.','Color','#D95319','Linewidth',2); 
+hold on;
 
+[m,umax] = max(usol');
+plot(linspace(T(1),T(end),length(umax)),wrapToPi(x(umax)),'.','Color','#77AC30','Linewidth',2); 
+axis tight;
+legend('','PVA','max')
+
+hold off;
 
 % hold off;
 end

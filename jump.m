@@ -46,13 +46,16 @@ for j=8:8
     plot(T2,wrapToPi(z(zmax)),'.');
     hold on;
     plot(linspace(T(1),T(end),length(pva)),pva,'.','Linewidth',2); 
-    axis([T(1) T(end) -pi pi])
-    legend('input','PVA')
-
-    hold on;
+%     axis([T(1) T(end) -pi pi])
+    axis tight;
+    
+    
+    [m,umax] = max(usol');
+    plot(linspace(T(1),T(end),length(umax)),wrapToPi(x(umax)),'.','Color','#77AC30','Linewidth',2); 
+    legend('input','PVA','max')
+    hold off;
+    pbaspect([2 1 1])
+    xlabel('t');ylabel('\theta');zlabel('u');
 end
 
-% 
-% u0 = @(z) 5*(cos(z)+1).^2; %usual initial condition.
-% [fig,usol,T] = driverjumpfig(p,n,Iapp,u0);
 

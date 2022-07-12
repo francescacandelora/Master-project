@@ -1,11 +1,11 @@
-function [fig,usol,T] = driverinput(p,n,Iapp,u2)
+ function [usol,T] = driverfuncbif(p,n,Iapp,u2)
 
 mu = p(1);      
 h = p(2);       
 a1 = p(3);     
 b1 = p(4);      
 a2 = p(5);      
-b2 = p(6); 
+b2 = p(6);    
 
 % discretization of
 % $x \in [-\pi,\pi]$
@@ -15,7 +15,7 @@ x = x(1:end-1);
 deltax = 2*pi/n;
 
 % interval of integration
-trange = [0:0.02:20]; 
+trange = [0:0.02:30]; %[0:2:1000]
 
 % Initial condition. It's a function, as U is a vector with 
 % $U_i = U(x_i,t)$
@@ -51,45 +51,42 @@ nf = @(t,u) neuralField(t,u,n,f,M,Iapp);
 x = [x;pi];
 usol = [usol,usol(:,1)];
 
-[X,T] = meshgrid(x,tsol); 
+[X,T] = meshgrid(x,tsol); %I need this line because T is an output
 
-% this is because we want to draw the solution as a surface, function of
-% time and x.
+pva = angle(usol(:,1:16)*exp(j*x(1:16,:)));
 
+%% This has to be restored when I want fig as an output.
 
-fig = figure;
-% surf(T,X,usol);
-
-pcolor(T,X,usol)
-pbaspect([2 1 1])
-
-xlabel('t');ylabel('\theta');zlabel('u');
-shading flat;
-colormap(flipud(bone))
-%colormap(brewermap(9,'Blues'))
-
-colorbar; % caxis o clim ([a b]) forces black to be at b and white at a, so I have the same values for same colors in different images.
-
-hold on;
-
-
-z = linspace(-pi,x(end),10000)';
-%redline = @(t) z(zmax)+0.08*t;
-
-T2 =  linspace(T(1),T(end),10000);
-
-% Instead of max I am going to compute the PVA. For each instant in time
-% (each element of usol) I compute the average by integrating over the
-% size(usol) columns.
-pva = angle(usol(:,1:16)*exp(i*x(1:16,:)));
-
-plot(linspace(T(1),T(end),length(pva)),pva,'.','Color','#D95319','Linewidth',2); 
-axis tight;
+% fig = figure;
+% %size(usol)
+% %surf(T,X,usol);
+% 
+% pcolor(T,X,usol)
+% xlabel('t');ylabel('x');zlabel('u');
+% shading flat;
+% colormap(flipud(bone))
+% %colormap(brewermap(9,'Blues'))
+% colorbar; % caxis o clim ([a b]) forces black to be at b and white at a, so I have the same values for same colors in different images.
+% caxis([-15, 25]);
 % hold on;
-% plot(T2,wrapToPi(z(zmax)),'.','Linewidth',2); 
-% axis tight;
-hold off;
 
+
+
+% z = linspace(-pi,x(end),10000)';
+% %redline = @(t) z(zmax)+0.08*t;
+% 
+% T2 =  linspace(T(1),T(end),10000);
+% [m,zmax] = max(Iapp(z,T2));
+% %redlineper = @(t) wrapToPi(z(zmax)+0.004*t); %wraptopi
+% %redlineper = @(t) Iapp(z(zmax),t);
+% 
+% [m,umax] = max(usol');
+% plot(linspace(T(1),T(end),length(umax)),wrapToPi(x(umax)),'.','Color','#D95319','Linewidth',2); 
+% axis tight;
+% % hold on;
+% % plot(T2,wrapToPi(z(zmax)),'.','Linewidth',2); 
+% % axis tight;
+% hold off;
 end
 
 

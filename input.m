@@ -21,7 +21,7 @@ x = x(1:end-1);
 % deltax = 2*pi/n;
 
 % Strength of input and/or init cond
-s = 15;
+s = 8;
 % exponent of input and/or init cond
 pa = 2;
 
@@ -39,7 +39,7 @@ Iapp = @(z,t) s*(cos(z-c(t))+1).^pa;
 % Iapp = @(z,t) s*(cos(z-c(t))+1).^pa.*(t<=6) +(s*(cos(2+z-c(t-5))+1).^pa).*(t>=7&t<=12)+s*(cos(z-c(t))+1).^pa.*(t>=16);
 % Iapp = @(z,t) s*(cos(z-c(t))+1).^pa.*(t<=10);
 
-
+% 
 % c = @(t) 10*exp(-t/20);
 % Iapp = @(z,t) s*(cos(z/2+(-c(t))+1)).^pa; %come sopra
 
@@ -78,3 +78,6 @@ plot(linspace(T(1),T(end),length(pva)),pva,'.');
 %axis tight;
 hold on;
 legend('input','PVA')
+pbaspect([2 1 1])
+
+xlabel('t');ylabel('\theta');zlabel('u');
